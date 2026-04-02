@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>우리 가족 앨범</title>
+
+<!-- PWA 홈화면 아이콘 설정 -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="가족 앨범">
+<meta name="theme-color" content="#f5f0e8">
+
+<!-- 홈화면 아이콘 (인라인 SVG → base64) -->
+<link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxODAgMTgwIj48cmVjdCB3aWR0aD0iMTgwIiBoZWlnaHQ9IjE4MCIgcng9IjQwIiBmaWxsPSIjZjVmMGU4Ii8+PHRleHQgeD0iOTAiIHk9IjExNSIgZm9udC1zaXplPSI5MCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+8J+TtyA8L3RleHQ+PC9zdmc+">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📷</text></svg>">
+
+<style>
+  :root {
+    --bg: #f5f0e8;
+    --surface: #ffffff;
+    --surface2: #f0ebe0;
+    --border: rgba(0,0,0,0.1);
+    --text: #1a1a1a;
+    --text2: #6b6560;
+    --accent: #c17b3f;
+    --accent-light: #f5e6d3;
+    --radius: 18px;
+    --radius-sm: 12px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: -apple-system, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding-bottom: 2rem;
+  }
+
+  /* 헤더 */
+  .header {
+    background: var(--surface);
+    text-align: center;
+    padding: 2rem 1.5rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 10;
+  }
+  .header h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; }
+  .header p { font-size: 15px; color: var(--text2); margin-top: 4px; }
+
+  /* 업로드 영역 */
+  .upload-wrap { padding: 1.25rem 1.25rem 0; }
+  .upload-btn {
+    display: flex; align-items: center; justify-content: center; gap: 12px;
+    width: 100%;
+    background: var(--accent);
+    color: white;
+    border: none; border-radius: var(--radius);
+    padding: 22px;
+    font-size: 22px; font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+    box-shadow: 0 4px 16px rgba(193,123,63,0.3);
+  }
+  .upload-btn:active { opacity: 0.85; transform: scale(0.98); }
+  .upload-btn .icon { font-size: 28px; }
+  #fileInput { display: none; }
+
+  /* 사진 수 */
+  .count-bar {
+    padding: 1rem 1.25rem 0.5rem;
+    font-size: 16px; color: var(--text2);
+    display: none;
+  }
+  .count-bar strong { color: var(--text); }
+
+  /* 갤러리 그리드 */
+  .gallery {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    padding: 0.75rem 1.25rem;
+  }
+
+  .photo-card {
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    background: var(--surface);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .photo-card:active { transform: scale(0.97); box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+
+  .photo-card img {
+    width: 100%; aspect-ratio: 1/1;
+    object-fit: cover; display: block;
+  }
+  .photo-card .info { padding: 10px 12px; }
+  .photo-card .info .name {
+    font-size: 14px; font-weight: 600;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    color: var(--text);
+  }
+  .photo-card .info .date { font-size: 12px; color: var(--text2); margin-top: 2px; }
+
+  /* 빈 상태 */
+  .empty {
+    grid-column: 1/-1;
+    text-align: center;
+    padding: 3.5rem 1rem;
+    color: var(--text2);
+  }
+  .empty .big { font-size: 56px; margin-bottom: 0.75rem; }
+  .empty p { font-size: 18px; font-weight: 600; color: var(--text); }
+  .empty span { font-size: 15px; display: block; margin-top: 6px; }
+
+  /* 모달 */
+  .modal-bg {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.92);
+    z-index: 100; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 1rem;
+  }
+  .modal-bg.open { display: flex; }
+
+  .modal-img {
+    max-width: 100%; max-height: 68vh;
+    border-radius: var(--radius-sm);
+    object-fit: contain; display: block;
+  }
+
+  .modal-footer {
+    width: 100%; margin-top: 20px;
+    display: flex; flex-direction: column; align-items: center; gap: 14px;
+  }
+  .modal-name { font-size: 20px; font-weight: 700; color: white; text-align: center; }
+  .modal-date { font-size: 15px; color: rgba(255,255,255,0.55); }
+
+  .modal-btns { display: flex; gap: 12px; width: 100%; }
+  .modal-btn {
+    flex: 1; padding: 18px;
+    border: none; border-radius: var(--radius-sm);
+    font-size: 19px; font-weight: 700;
+    cursor: pointer; transition: opacity 0.15s, transform 0.1s;
+  }
+  .modal-btn:active { opacity: 0.8; transform: scale(0.97); }
+  .btn-save { background: var(--accent); color: white; }
+  .btn-close { background: rgba(255,255,255,0.15); color: white; }
+
+  /* PWA 설치 안내 배너 */
+  .install-banner {
+    margin: 1.25rem 1.25rem 0;
+    background: var(--accent-light);
+    border: 1.5px solid var(--accent);
+    border-radius: var(--radius-sm);
+    padding: 14px 16px;
+    display: flex; align-items: flex-start; gap: 10px;
+  }
+  .install-banner .ico { font-size: 24px; flex-shrink: 0; }
+  .install-banner .txt p { font-size: 15px; font-weight: 700; color: var(--accent); }
+  .install-banner .txt span { font-size: 13px; color: var(--text2); line-height: 1.5; display: block; margin-top: 2px; }
+  .banner-close {
+    margin-left: auto; background: none; border: none;
+    font-size: 18px; color: var(--text2); cursor: pointer; padding: 0 0 0 8px; flex-shrink: 0;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>📷 우리 가족 앨범</h1>
+  <p>소중한 순간을 함께 간직해요</p>
+</div>
+
+<!-- 홈화면 추가 안내 배너 -->
+<div class="install-banner" id="installBanner">
+  <div class="ico">📲</div>
+  <div class="txt">
+    <p>홈화면에 아이콘 추가하기</p>
+    <span>
+      iPhone: 하단 공유 버튼(□↑) → "홈 화면에 추가"<br>
+      Android: 브라우저 메뉴(⋮) → "홈 화면에 추가"
+    </span>
+  </div>
+  <button class="banner-close" onclick="document.getElementById('installBanner').style.display='none'">✕</button>
+</div>
+
+<!-- 업로드 -->
+<div class="upload-wrap">
+  <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+    <span class="icon">＋</span> 사진 올리기
+  </button>
+  <input type="file" id="fileInput" multiple accept="image/*" onchange="handleUpload(event)">
+</div>
+
+<!-- 사진 수 -->
+<div class="count-bar" id="countBar">
+  사진 <strong id="totalCount">0</strong>장
+</div>
+
+<!-- 갤러리 -->
+<div class="gallery" id="gallery">
+  <div class="empty">
+    <div class="big">🏡</div>
+    <p>아직 사진이 없어요</p>
+    <span>위 버튼을 눌러 사진을 올려주세요</span>
+  </div>
+</div>
+
+<!-- 크게 보기 모달 -->
+<div class="modal-bg" id="modalBg">
+  <img class="modal-img" id="modalImg" src="" alt="">
+  <div class="modal-footer">
+    <div class="modal-name" id="modalName"></div>
+    <div class="modal-date" id="modalDate"></div>
+    <div class="modal-btns">
+      <button class="modal-btn btn-save" id="saveBtn">⬇ 저장하기</button>
+      <button class="modal-btn btn-close" onclick="closeModal()">✕ 닫기</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const photos = [];
+
+function handleUpload(e) {
+  const files = Array.from(e.target.files);
+  let loaded = 0;
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      photos.unshift({
+        src: ev.target.result,
+        name: file.name.replace(/\.[^.]+$/, ''),
+        date: new Date().toLocaleDateString('ko-KR', {year:'numeric', month:'long', day:'numeric'})
+      });
+      loaded++;
+      if (loaded === files.length) render();
+    };
+    reader.readAsDataURL(file);
+  });
+  e.target.value = '';
+}
+
+function render() {
+  const gallery = document.getElementById('gallery');
+  gallery.innerHTML = '';
+  document.getElementById('totalCount').textContent = photos.length;
+  document.getElementById('countBar').style.display = photos.length ? '' : 'none';
+
+  if (!photos.length) {
+    gallery.innerHTML = `<div class="empty"><div class="big">🏡</div><p>아직 사진이 없어요</p><span>위 버튼을 눌러 사진을 올려주세요</span></div>`;
+    return;
+  }
+  photos.forEach((p, i) => {
+    const card = document.createElement('div');
+    card.className = 'photo-card';
+    card.innerHTML = `<img src="${p.src}" alt="${p.name}" loading="lazy"><div class="info"><div class="name">${p.name}</div><div class="date">${p.date}</div></div>`;
+    card.onclick = () => openModal(i);
+    gallery.appendChild(card);
+  });
+}
+
+function openModal(i) {
+  const p = photos[i];
+  document.getElementById('modalImg').src = p.src;
+  document.getElementById('modalName').textContent = p.name;
+  document.getElementById('modalDate').textContent = p.date;
+  document.getElementById('saveBtn').onclick = () => {
+    const a = document.createElement('a');
+    a.href = p.src; a.download = p.name + '.jpg'; a.click();
+  };
+  document.getElementById('modalBg').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modalBg').classList.remove('open');
+}
+
+document.getElementById('modalBg').addEventListener('click', e => {
+  if (e.target === document.getElementById('modalBg')) closeModal();
+});
+</script>
+</body>
+</html>
