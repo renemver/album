@@ -4,17 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>우리 가족 앨범</title>
-
-<!-- PWA 홈화면 아이콘 설정 -->
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="가족 앨범">
 <meta name="theme-color" content="#f5f0e8">
-
-<!-- 홈화면 아이콘 (인라인 SVG → base64) -->
 <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxODAgMTgwIj48cmVjdCB3aWR0aD0iMTgwIiBoZWlnaHQ9IjE4MCIgcng9IjQwIiBmaWxsPSIjZjVmMGU4Ii8+PHRleHQgeD0iOTAiIHk9IjExNSIgZm9udC1zaXplPSI5MCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+8J+TtyA8L3RleHQ+PC9zdmc+">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📷</text></svg>">
-
 <style>
   :root {
     --bg: #f5f0e8;
@@ -25,134 +20,84 @@
     --text2: #6b6560;
     --accent: #c17b3f;
     --accent-light: #f5e6d3;
+    --danger: #d94f4f;
     --radius: 18px;
     --radius-sm: 12px;
   }
-
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-
   body {
     font-family: -apple-system, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
     background: var(--bg);
     color: var(--text);
     min-height: 100vh;
-    padding-bottom: 2rem;
   }
 
-  /* 헤더 */
+  /* ── 비밀번호 화면 ── */
+  #lockScreen {
+    min-height: 100vh;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 2rem;
+  }
+  .lock-box {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 2.5rem 2rem;
+    width: 100%; max-width: 340px;
+    text-align: center;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+  }
+  .lock-icon { font-size: 52px; margin-bottom: 1rem; }
+  .lock-box h2 { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+  .lock-box p { font-size: 15px; color: var(--text2); margin-bottom: 2rem; }
+
+  .pin-display {
+    display: flex; justify-content: center; gap: 14px;
+    margin-bottom: 2rem;
+  }
+  .pin-dot {
+    width: 18px; height: 18px; border-radius: 50%;
+    border: 2px solid var(--accent);
+    background: transparent;
+    transition: background 0.15s;
+  }
+  .pin-dot.filled { background: var(--accent); }
+
+  .pin-pad {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+  .pin-btn {
+    aspect-ratio: 1/1;
+    background: var(--surface2);
+    border: none; border-radius: var(--radius-sm);
+    font-size: 24px; font-weight: 600;
+    cursor: pointer; color: var(--text);
+    transition: background 0.1s, transform 0.1s;
+  }
+  .pin-btn:active { background: var(--accent); color: white; transform: scale(0.94); }
+  .pin-btn.del { font-size: 20px; }
+  .pin-btn.empty { visibility: hidden; }
+
+  .lock-error {
+    margin-top: 1rem; font-size: 14px;
+    color: var(--danger); min-height: 20px;
+    font-weight: 500;
+  }
+
+  /* ── 앨범 화면 ── */
+  #albumScreen { display: none; padding-bottom: 3rem; }
+
   .header {
     background: var(--surface);
     text-align: center;
-    padding: 2rem 1.5rem 1.5rem;
+    padding: 2rem 1.5rem 1.25rem;
     border-bottom: 1px solid var(--border);
     position: sticky; top: 0; z-index: 10;
   }
   .header h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; }
   .header p { font-size: 15px; color: var(--text2); margin-top: 4px; }
 
-  /* 업로드 영역 */
-  .upload-wrap { padding: 1.25rem 1.25rem 0; }
-  .upload-btn {
-    display: flex; align-items: center; justify-content: center; gap: 12px;
-    width: 100%;
-    background: var(--accent);
-    color: white;
-    border: none; border-radius: var(--radius);
-    padding: 22px;
-    font-size: 22px; font-weight: 700;
-    cursor: pointer;
-    transition: opacity 0.15s, transform 0.1s;
-    box-shadow: 0 4px 16px rgba(193,123,63,0.3);
-  }
-  .upload-btn:active { opacity: 0.85; transform: scale(0.98); }
-  .upload-btn .icon { font-size: 28px; }
-  #fileInput { display: none; }
-
-  /* 사진 수 */
-  .count-bar {
-    padding: 1rem 1.25rem 0.5rem;
-    font-size: 16px; color: var(--text2);
-    display: none;
-  }
-  .count-bar strong { color: var(--text); }
-
-  /* 갤러리 그리드 */
-  .gallery {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
-    padding: 0.75rem 1.25rem;
-  }
-
-  .photo-card {
-    border-radius: var(--radius-sm);
-    overflow: hidden;
-    background: var(--surface);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    cursor: pointer;
-    transition: transform 0.15s, box-shadow 0.15s;
-    -webkit-tap-highlight-color: transparent;
-  }
-  .photo-card:active { transform: scale(0.97); box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
-
-  .photo-card img {
-    width: 100%; aspect-ratio: 1/1;
-    object-fit: cover; display: block;
-  }
-  .photo-card .info { padding: 10px 12px; }
-  .photo-card .info .name {
-    font-size: 14px; font-weight: 600;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    color: var(--text);
-  }
-  .photo-card .info .date { font-size: 12px; color: var(--text2); margin-top: 2px; }
-
-  /* 빈 상태 */
-  .empty {
-    grid-column: 1/-1;
-    text-align: center;
-    padding: 3.5rem 1rem;
-    color: var(--text2);
-  }
-  .empty .big { font-size: 56px; margin-bottom: 0.75rem; }
-  .empty p { font-size: 18px; font-weight: 600; color: var(--text); }
-  .empty span { font-size: 15px; display: block; margin-top: 6px; }
-
-  /* 모달 */
-  .modal-bg {
-    display: none; position: fixed; inset: 0;
-    background: rgba(0,0,0,0.92);
-    z-index: 100; flex-direction: column;
-    align-items: center; justify-content: center;
-    padding: 1rem;
-  }
-  .modal-bg.open { display: flex; }
-
-  .modal-img {
-    max-width: 100%; max-height: 68vh;
-    border-radius: var(--radius-sm);
-    object-fit: contain; display: block;
-  }
-
-  .modal-footer {
-    width: 100%; margin-top: 20px;
-    display: flex; flex-direction: column; align-items: center; gap: 14px;
-  }
-  .modal-name { font-size: 20px; font-weight: 700; color: white; text-align: center; }
-  .modal-date { font-size: 15px; color: rgba(255,255,255,0.55); }
-
-  .modal-btns { display: flex; gap: 12px; width: 100%; }
-  .modal-btn {
-    flex: 1; padding: 18px;
-    border: none; border-radius: var(--radius-sm);
-    font-size: 19px; font-weight: 700;
-    cursor: pointer; transition: opacity 0.15s, transform 0.1s;
-  }
-  .modal-btn:active { opacity: 0.8; transform: scale(0.97); }
-  .btn-save { background: var(--accent); color: white; }
-  .btn-close { background: rgba(255,255,255,0.15); color: white; }
-
-  /* PWA 설치 안내 배너 */
   .install-banner {
     margin: 1.25rem 1.25rem 0;
     background: var(--accent-light);
@@ -161,54 +106,198 @@
     padding: 14px 16px;
     display: flex; align-items: flex-start; gap: 10px;
   }
-  .install-banner .ico { font-size: 24px; flex-shrink: 0; }
-  .install-banner .txt p { font-size: 15px; font-weight: 700; color: var(--accent); }
-  .install-banner .txt span { font-size: 13px; color: var(--text2); line-height: 1.5; display: block; margin-top: 2px; }
-  .banner-close {
-    margin-left: auto; background: none; border: none;
-    font-size: 18px; color: var(--text2); cursor: pointer; padding: 0 0 0 8px; flex-shrink: 0;
+  .install-banner .ico { font-size: 22px; flex-shrink: 0; }
+  .install-banner .txt p { font-size: 14px; font-weight: 700; color: var(--accent); }
+  .install-banner .txt span { font-size: 12px; color: var(--text2); line-height: 1.6; display: block; margin-top: 3px; }
+  .banner-close { margin-left: auto; background: none; border: none; font-size: 18px; color: var(--text2); cursor: pointer; padding: 0 0 0 8px; flex-shrink: 0; }
+
+  .upload-wrap { padding: 1.25rem 1.25rem 0; }
+  .upload-btn {
+    display: flex; align-items: center; justify-content: center; gap: 12px;
+    width: 100%; background: var(--accent); color: white;
+    border: none; border-radius: var(--radius);
+    padding: 22px; font-size: 22px; font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+    box-shadow: 0 4px 16px rgba(193,123,63,0.3);
   }
+  .upload-btn:active { opacity: 0.85; transform: scale(0.98); }
+  .upload-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+  #fileInput { display: none; }
+
+  .count-bar { padding: 1rem 1.25rem 0.5rem; font-size: 16px; color: var(--text2); display: none; }
+  .count-bar strong { color: var(--text); }
+
+  .gallery {
+    display: grid; grid-template-columns: repeat(2, 1fr);
+    gap: 10px; padding: 0.5rem 1.25rem;
+  }
+  @media (min-width: 700px) { .gallery { grid-template-columns: repeat(3, 1fr); } }
+
+  .photo-card {
+    border-radius: var(--radius-sm); overflow: hidden;
+    background: var(--surface);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    position: relative; cursor: pointer;
+    transition: transform 0.15s;
+  }
+  .photo-card:active { transform: scale(0.97); }
+  .photo-card img { width: 100%; aspect-ratio: 1/1; object-fit: cover; display: block; }
+  .photo-card .info { padding: 8px 12px 10px; }
+  .photo-card .info .date { font-size: 12px; color: var(--text2); }
+
+  .del-btn {
+    position: absolute; top: 8px; right: 8px;
+    width: 32px; height: 32px; border-radius: 50%;
+    background: rgba(0,0,0,0.55); color: white;
+    border: none; font-size: 15px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; z-index: 2; transition: background 0.15s;
+  }
+  .del-btn:hover { background: var(--danger); }
+
+  .empty { grid-column: 1/-1; text-align: center; padding: 3.5rem 1rem; color: var(--text2); }
+  .empty .big { font-size: 56px; margin-bottom: 0.75rem; }
+  .empty p { font-size: 18px; font-weight: 600; color: var(--text); }
+  .empty span { font-size: 15px; display: block; margin-top: 6px; }
+
+  .loading-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.5); z-index: 300;
+    flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+  }
+  .loading-overlay.show { display: flex; }
+  .spinner {
+    width: 48px; height: 48px;
+    border: 4px solid rgba(255,255,255,0.3);
+    border-top-color: white; border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-overlay p { color: white; font-size: 18px; font-weight: 600; }
+
+  .toast {
+    position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%);
+    background: #1a1a1a; color: white;
+    padding: 14px 24px; border-radius: 50px;
+    font-size: 15px; font-weight: 500;
+    opacity: 0; transition: opacity 0.3s;
+    z-index: 400; white-space: nowrap; pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+
+  .modal-bg {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.92); z-index: 200;
+    flex-direction: column; align-items: center; justify-content: center; padding: 1rem;
+  }
+  .modal-bg.open { display: flex; }
+  .modal-img { max-width: 100%; max-height: 68vh; border-radius: var(--radius-sm); object-fit: contain; display: block; }
+  .modal-footer { width: 100%; margin-top: 20px; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+  .modal-date { font-size: 15px; color: rgba(255,255,255,0.55); }
+  .modal-btns { display: flex; gap: 12px; width: 100%; }
+  .modal-btn {
+    flex: 1; padding: 18px; border: none;
+    border-radius: var(--radius-sm); font-size: 19px; font-weight: 700;
+    cursor: pointer; transition: opacity 0.15s, transform 0.1s;
+  }
+  .modal-btn:active { opacity: 0.8; transform: scale(0.97); }
+  .btn-save { background: var(--accent); color: white; }
+  .btn-close { background: rgba(255,255,255,0.15); color: white; }
+
+  .confirm-bg {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7); z-index: 500;
+    align-items: center; justify-content: center; padding: 1.5rem;
+  }
+  .confirm-bg.open { display: flex; }
+  .confirm-box {
+    background: var(--surface); border-radius: var(--radius);
+    padding: 2rem 1.5rem; width: 100%; max-width: 340px; text-align: center;
+  }
+  .confirm-box p { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+  .confirm-box span { font-size: 14px; color: var(--text2); }
+  .confirm-btns { display: flex; gap: 10px; margin-top: 1.5rem; }
+  .confirm-btn { flex: 1; padding: 16px; border: none; border-radius: var(--radius-sm); font-size: 17px; font-weight: 700; cursor: pointer; }
+  .confirm-cancel { background: var(--surface2); color: var(--text); }
+  .confirm-delete { background: var(--danger); color: white; }
 </style>
 </head>
 <body>
 
-<div class="header">
-  <h1>📷 우리 가족 앨범</h1>
-  <p>소중한 순간을 함께 간직해요</p>
-</div>
+<script>
+  const CLOUD_NAME = 'dj4qjez31';
+  const UPLOAD_PRESET = 'putyhjce';
+  const FOLDER = 'family-album';
+  // SHA-256 hash of the password — plain password is never stored in code
+  const PW_HASH = 'd74fe97872d8a425b5263add13d51a1066bf0b2cdd5e368d316dfe31048b2104';
+  const SESSION_KEY = 'fam_auth';
+</script>
 
-<!-- 홈화면 추가 안내 배너 -->
-<div class="install-banner" id="installBanner">
-  <div class="ico">📲</div>
-  <div class="txt">
-    <p>홈화면에 아이콘 추가하기</p>
-    <span>
-      iPhone: 하단 공유 버튼(□↑) → "홈 화면에 추가"<br>
-      Android: 브라우저 메뉴(⋮) → "홈 화면에 추가"
-    </span>
+<!-- ── 비밀번호 화면 ── -->
+<div id="lockScreen">
+  <div class="lock-box">
+    <div class="lock-icon">🔒</div>
+    <h2>우리 가족 앨범</h2>
+    <p>비밀번호를 입력해주세요</p>
+    <div class="pin-display">
+      <div class="pin-dot" id="d0"></div>
+      <div class="pin-dot" id="d1"></div>
+      <div class="pin-dot" id="d2"></div>
+      <div class="pin-dot" id="d3"></div>
+    </div>
+    <div class="pin-pad">
+      <button class="pin-btn" onclick="pinInput('1')">1</button>
+      <button class="pin-btn" onclick="pinInput('2')">2</button>
+      <button class="pin-btn" onclick="pinInput('3')">3</button>
+      <button class="pin-btn" onclick="pinInput('4')">4</button>
+      <button class="pin-btn" onclick="pinInput('5')">5</button>
+      <button class="pin-btn" onclick="pinInput('6')">6</button>
+      <button class="pin-btn" onclick="pinInput('7')">7</button>
+      <button class="pin-btn" onclick="pinInput('8')">8</button>
+      <button class="pin-btn" onclick="pinInput('9')">9</button>
+      <button class="pin-btn empty" disabled></button>
+      <button class="pin-btn" onclick="pinInput('0')">0</button>
+      <button class="pin-btn del" onclick="pinDelete()">⌫</button>
+    </div>
+    <div class="lock-error" id="lockError"></div>
   </div>
-  <button class="banner-close" onclick="document.getElementById('installBanner').style.display='none'">✕</button>
 </div>
 
-<!-- 업로드 -->
-<div class="upload-wrap">
-  <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
-    <span class="icon">＋</span> 사진 올리기
-  </button>
-  <input type="file" id="fileInput" multiple accept="image/*" onchange="handleUpload(event)">
-</div>
+<!-- ── 앨범 화면 ── -->
+<div id="albumScreen">
+  <div class="header">
+    <h1>📷 우리 가족 앨범</h1>
+    <p>소중한 순간을 함께 간직해요</p>
+  </div>
 
-<!-- 사진 수 -->
-<div class="count-bar" id="countBar">
-  사진 <strong id="totalCount">0</strong>장
-</div>
+  <div class="install-banner" id="installBanner">
+    <div class="ico">📲</div>
+    <div class="txt">
+      <p>홈화면에 아이콘 추가하기</p>
+      <span>
+        iPhone: 하단 공유(□↑) → "홈 화면에 추가"<br>
+        Android: 브라우저 메뉴(⋮) → "홈 화면에 추가"
+      </span>
+    </div>
+    <button class="banner-close" onclick="document.getElementById('installBanner').style.display='none'">✕</button>
+  </div>
 
-<!-- 갤러리 -->
-<div class="gallery" id="gallery">
-  <div class="empty">
-    <div class="big">🏡</div>
-    <p>아직 사진이 없어요</p>
-    <span>위 버튼을 눌러 사진을 올려주세요</span>
+  <div class="upload-wrap">
+    <button class="upload-btn" id="uploadBtn" onclick="document.getElementById('fileInput').click()">
+      <span>＋</span> 사진 올리기
+    </button>
+    <input type="file" id="fileInput" multiple accept="image/*" onchange="handleUpload(event)">
+  </div>
+
+  <div class="count-bar" id="countBar">사진 <strong id="totalCount">0</strong>장</div>
+
+  <div class="gallery" id="gallery">
+    <div class="empty">
+      <div class="big">🏡</div>
+      <p>아직 사진이 없어요</p>
+      <span>위 버튼을 눌러 사진을 올려주세요</span>
+    </div>
   </div>
 </div>
 
@@ -216,7 +305,6 @@
 <div class="modal-bg" id="modalBg">
   <img class="modal-img" id="modalImg" src="" alt="">
   <div class="modal-footer">
-    <div class="modal-name" id="modalName"></div>
     <div class="modal-date" id="modalDate"></div>
     <div class="modal-btns">
       <button class="modal-btn btn-save" id="saveBtn">⬇ 저장하기</button>
@@ -225,56 +313,200 @@
   </div>
 </div>
 
-<script>
-const photos = [];
+<!-- 삭제 확인 -->
+<div class="confirm-bg" id="confirmBg">
+  <div class="confirm-box">
+    <p>사진을 삭제할까요?</p>
+    <span>삭제하면 복구할 수 없어요</span>
+    <div class="confirm-btns">
+      <button class="confirm-btn confirm-cancel" onclick="closeConfirm()">취소</button>
+      <button class="confirm-btn confirm-delete" id="confirmDelBtn">삭제</button>
+    </div>
+  </div>
+</div>
 
-function handleUpload(e) {
-  const files = Array.from(e.target.files);
-  let loaded = 0;
-  files.forEach(file => {
-    const reader = new FileReader();
-    reader.onload = ev => {
-      photos.unshift({
-        src: ev.target.result,
-        name: file.name.replace(/\.[^.]+$/, ''),
-        date: new Date().toLocaleDateString('ko-KR', {year:'numeric', month:'long', day:'numeric'})
-      });
-      loaded++;
-      if (loaded === files.length) render();
-    };
-    reader.readAsDataURL(file);
-  });
-  e.target.value = '';
+<!-- 로딩 -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <p id="loadingMsg">불러오는 중...</p>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── PIN 입력 ──────────────────────────────────────────────────
+
+let pin = '';
+
+async function pinInput(n) {
+  if (pin.length >= 4) return;
+  pin += n;
+  updateDots();
+  if (pin.length === 4) {
+    await checkPin();
+  }
 }
+
+function pinDelete() {
+  pin = pin.slice(0, -1);
+  updateDots();
+  document.getElementById('lockError').textContent = '';
+}
+
+function updateDots() {
+  for (let i = 0; i < 4; i++) {
+    document.getElementById('d' + i).classList.toggle('filled', i < pin.length);
+  }
+}
+
+async function checkPin() {
+  const hash = await sha256(pin);
+  if (hash === PW_HASH) {
+    sessionStorage.setItem(SESSION_KEY, '1');
+    document.getElementById('lockScreen').style.display = 'none';
+    document.getElementById('albumScreen').style.display = 'block';
+    loadPhotos();
+  } else {
+    document.getElementById('lockError').textContent = '비밀번호가 틀렸어요';
+    pin = '';
+    updateDots();
+    // 살짝 흔들기
+    const box = document.querySelector('.lock-box');
+    box.style.transition = 'transform 0.1s';
+    box.style.transform = 'translateX(8px)';
+    setTimeout(() => { box.style.transform = 'translateX(-8px)'; }, 100);
+    setTimeout(() => { box.style.transform = 'none'; }, 200);
+  }
+}
+
+async function sha256(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// 세션 유지 — 이미 인증된 경우 바로 앨범 표시
+if (sessionStorage.getItem(SESSION_KEY) === '1') {
+  document.getElementById('lockScreen').style.display = 'none';
+  document.getElementById('albumScreen').style.display = 'block';
+}
+
+// ── Cloudinary ────────────────────────────────────────────────
+
+async function uploadToCloudinary(file) {
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('upload_preset', UPLOAD_PRESET);
+  fd.append('folder', FOLDER);
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
+    method: 'POST', body: fd
+  });
+  if (!res.ok) throw new Error('업로드 실패');
+  return await res.json();
+}
+
+async function fetchPhotos() {
+  const res = await fetch(`https://res.cloudinary.com/${CLOUD_NAME}/image/list/${FOLDER}.json`);
+  if (!res.ok) return [];
+  const data = await res.json();
+  return (data.resources || []).map(r => ({
+    public_id: r.public_id,
+    url: `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/q_auto,f_auto,w_1200/${r.public_id}`,
+    thumb: `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/q_auto,f_auto,w_400,h_400,c_fill/${r.public_id}`,
+    date: formatDate(r.created_at ? new Date(r.created_at) : new Date())
+  }));
+}
+
+// ── 업로드 ───────────────────────────────────────────────────
+
+let photos = [];
+let pendingDeleteId = null;
+
+async function handleUpload(e) {
+  const files = Array.from(e.target.files);
+  if (!files.length) return;
+  showLoading(`0 / ${files.length} 업로드 중...`);
+  setUploadDisabled(true);
+  let done = 0;
+  for (const file of files) {
+    try {
+      await uploadToCloudinary(file);
+      done++;
+      setLoadingMsg(`${done} / ${files.length} 업로드 중...`);
+    } catch {
+      showToast(`${file.name} 업로드 실패`);
+    }
+  }
+  hideLoading();
+  setUploadDisabled(false);
+  e.target.value = '';
+  if (done > 0) {
+    showToast(`${done}장 업로드 완료!`);
+    await loadPhotos();
+  }
+}
+
+// ── 불러오기 ─────────────────────────────────────────────────
+
+async function loadPhotos() {
+  showLoading('사진 불러오는 중...');
+  try {
+    photos = await fetchPhotos();
+    photos.sort((a, b) => b.public_id.localeCompare(a.public_id));
+  } catch {
+    showToast('사진을 불러오지 못했어요');
+    photos = [];
+  }
+  hideLoading();
+  render();
+}
+
+// ── 렌더링 ───────────────────────────────────────────────────
 
 function render() {
   const gallery = document.getElementById('gallery');
   gallery.innerHTML = '';
+  const countBar = document.getElementById('countBar');
+  countBar.style.display = photos.length ? '' : 'none';
   document.getElementById('totalCount').textContent = photos.length;
-  document.getElementById('countBar').style.display = photos.length ? '' : 'none';
 
   if (!photos.length) {
     gallery.innerHTML = `<div class="empty"><div class="big">🏡</div><p>아직 사진이 없어요</p><span>위 버튼을 눌러 사진을 올려주세요</span></div>`;
     return;
   }
+
   photos.forEach((p, i) => {
     const card = document.createElement('div');
     card.className = 'photo-card';
-    card.innerHTML = `<img src="${p.src}" alt="${p.name}" loading="lazy"><div class="info"><div class="name">${p.name}</div><div class="date">${p.date}</div></div>`;
-    card.onclick = () => openModal(i);
+
+    const img = document.createElement('img');
+    img.src = p.thumb;
+    img.alt = '가족 사진';
+    img.loading = 'lazy';
+    img.onclick = () => openModal(i);
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'del-btn';
+    delBtn.textContent = '✕';
+    delBtn.onclick = ev => { ev.stopPropagation(); askDelete(p.public_id); };
+
+    const info = document.createElement('div');
+    info.className = 'info';
+    info.innerHTML = `<div class="date">${p.date}</div>`;
+
+    card.appendChild(img);
+    card.appendChild(delBtn);
+    card.appendChild(info);
     gallery.appendChild(card);
   });
 }
 
+// ── 모달 ─────────────────────────────────────────────────────
+
 function openModal(i) {
   const p = photos[i];
-  document.getElementById('modalImg').src = p.src;
-  document.getElementById('modalName').textContent = p.name;
+  document.getElementById('modalImg').src = p.url;
   document.getElementById('modalDate').textContent = p.date;
-  document.getElementById('saveBtn').onclick = () => {
-    const a = document.createElement('a');
-    a.href = p.src; a.download = p.name + '.jpg'; a.click();
-  };
+  document.getElementById('saveBtn').onclick = () => window.open(p.url, '_blank');
   document.getElementById('modalBg').classList.add('open');
 }
 
@@ -285,6 +517,52 @@ function closeModal() {
 document.getElementById('modalBg').addEventListener('click', e => {
   if (e.target === document.getElementById('modalBg')) closeModal();
 });
+
+// ── 삭제 ─────────────────────────────────────────────────────
+
+function askDelete(publicId) {
+  pendingDeleteId = publicId;
+  document.getElementById('confirmBg').classList.add('open');
+}
+
+function closeConfirm() {
+  pendingDeleteId = null;
+  document.getElementById('confirmBg').classList.remove('open');
+}
+
+document.getElementById('confirmDelBtn').onclick = () => {
+  if (!pendingDeleteId) return;
+  photos = photos.filter(p => p.public_id !== pendingDeleteId);
+  pendingDeleteId = null;
+  closeConfirm();
+  render();
+  showToast('삭제했어요');
+};
+
+// ── 유틸 ─────────────────────────────────────────────────────
+
+function formatDate(d) {
+  return d.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+}
+function showLoading(msg) {
+  document.getElementById('loadingMsg').textContent = msg;
+  document.getElementById('loadingOverlay').classList.add('show');
+}
+function setLoadingMsg(msg) { document.getElementById('loadingMsg').textContent = msg; }
+function hideLoading() { document.getElementById('loadingOverlay').classList.remove('show'); }
+function setUploadDisabled(v) { document.getElementById('uploadBtn').disabled = v; }
+
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// 인증된 상태면 바로 로드
+if (sessionStorage.getItem(SESSION_KEY) === '1') loadPhotos();
 </script>
 </body>
 </html>
