@@ -426,6 +426,8 @@ async function handleUpload(e) {
     const res = await fetch('/api/photos/upload', { method: 'POST', body: fd });
     const data = await res.json();
     showToast(`${data.uploaded}장 업로드 완료!`);
+    setLoadingMsg('사진 목록 업데이트 중...');
+    await new Promise(r => setTimeout(r, 1500));
     await loadPhotos();
   } catch {
     showToast('업로드에 실패했어요');
