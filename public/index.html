@@ -93,17 +93,6 @@
   .header h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; }
   .header p { font-size: 15px; color: var(--text2); margin-top: 4px; }
 
-  .install-banner {
-    margin: 1.25rem 1.25rem 0;
-    background: var(--accent-light); border: 1.5px solid var(--accent);
-    border-radius: var(--radius-sm); padding: 14px 16px;
-    display: flex; align-items: flex-start; gap: 10px;
-  }
-  .install-banner .ico { font-size: 22px; flex-shrink: 0; }
-  .install-banner .txt p { font-size: 14px; font-weight: 700; color: var(--accent); }
-  .install-banner .txt span { font-size: 12px; color: var(--text2); line-height: 1.6; display: block; margin-top: 3px; }
-  .banner-close { margin-left: auto; background: none; border: none; font-size: 18px; color: var(--text2); cursor: pointer; padding: 0 0 0 8px; flex-shrink: 0; }
-
   .upload-wrap { padding: 1.25rem 1.25rem 0; }
   .upload-btn {
     display: flex; align-items: center; justify-content: center; gap: 12px;
@@ -211,6 +200,29 @@
   .confirm-btn { flex: 1; padding: 16px; border: none; border-radius: var(--radius-sm); font-size: 17px; font-weight: 700; cursor: pointer; }
   .confirm-cancel { background: var(--surface2); color: var(--text); }
   .confirm-delete { background: var(--danger); color: white; }
+
+  /* 업로드 확인 모달 */
+  .upload-confirm-bg {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7); z-index: 600;
+    align-items: center; justify-content: center; padding: 1.5rem;
+  }
+  .upload-confirm-bg.open { display: flex; }
+  .upload-confirm-box {
+    background: var(--surface); border-radius: var(--radius);
+    padding: 2rem 1.5rem; width: 100%; max-width: 360px; text-align: center;
+  }
+  .upload-confirm-box .uc-icon { font-size: 40px; margin-bottom: 0.75rem; }
+  .upload-confirm-box p { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+  .upload-confirm-box span { font-size: 14px; color: var(--text2); display: block; margin-bottom: 1.5rem; }
+  .upload-preview {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    justify-content: center; margin-bottom: 1.5rem; max-height: 160px; overflow-y: auto;
+  }
+  .upload-preview img {
+    width: 72px; height: 72px; object-fit: cover;
+    border-radius: var(--radius-sm); border: 1.5px solid var(--border);
+  }
 </style>
 </head>
 <body>
@@ -237,18 +249,6 @@
   <div class="header">
     <h1>📷 우리 가족 앨범</h1>
     <p>소중한 순간을 함께 간직해요</p>
-  </div>
-
-  <div class="install-banner" id="installBanner">
-    <div class="ico">📲</div>
-    <div class="txt">
-      <p>홈화면에 아이콘 추가하기</p>
-      <span>
-        iPhone: 하단 공유(□↑) → "홈 화면에 추가"<br>
-        Android: 브라우저 메뉴(⋮) → "홈 화면에 추가"
-      </span>
-    </div>
-    <button class="banner-close" onclick="document.getElementById('installBanner').style.display='none'">✕</button>
   </div>
 
   <div class="upload-wrap">
@@ -288,6 +288,20 @@
     <div class="confirm-btns">
       <button class="confirm-btn confirm-cancel" onclick="closeConfirm()">취소</button>
       <button class="confirm-btn confirm-delete" id="confirmDelBtn">삭제</button>
+    </div>
+  </div>
+</div>
+
+<!-- 업로드 확인 모달 -->
+<div class="upload-confirm-bg" id="uploadConfirmBg">
+  <div class="upload-confirm-box">
+    <div class="uc-icon">📸</div>
+    <p id="uploadConfirmTitle">사진을 올릴까요?</p>
+    <span id="uploadConfirmSub"></span>
+    <div class="upload-preview" id="uploadPreview"></div>
+    <div class="confirm-btns">
+      <button class="confirm-btn confirm-cancel" onclick="cancelUpload()">취소</button>
+      <button class="confirm-btn btn-save" id="uploadConfirmBtn" style="background:var(--accent);color:white;" onclick="doUpload()">올리기</button>
     </div>
   </div>
 </div>
@@ -412,15 +426,47 @@ async function loadPhotos() {
   render();
 }
 
-async function handleUpload(e) {
+let pendingFiles = [];
+
+function handleUpload(e) {
   const files = Array.from(e.target.files);
   if (!files.length) return;
-  showLoading(`0 / ${files.length} 업로드 중...`);
+  pendingFiles = files;
+  e.target.value = '';
+
+  // 미리보기 생성
+  const preview = document.getElementById('uploadPreview');
+  preview.innerHTML = '';
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const img = document.createElement('img');
+      img.src = ev.target.result;
+      preview.appendChild(img);
+    };
+    reader.readAsDataURL(file);
+  });
+
+  document.getElementById('uploadConfirmTitle').textContent = `사진 ${files.length}장을 올릴까요?`;
+  document.getElementById('uploadConfirmSub').textContent = `선택한 사진을 가족 앨범에 올려요`;
+  document.getElementById('uploadConfirmBg').classList.add('open');
+}
+
+function cancelUpload() {
+  pendingFiles = [];
+  document.getElementById('uploadConfirmBg').classList.remove('open');
+  document.getElementById('uploadPreview').innerHTML = '';
+}
+
+async function doUpload() {
+  if (!pendingFiles.length) return;
+  document.getElementById('uploadConfirmBg').classList.remove('open');
+  showLoading(`${pendingFiles.length}장 업로드 중...`);
   setUploadDisabled(true);
 
   const fd = new FormData();
-  files.forEach(f => fd.append('files', f));
-  setLoadingMsg(`${files.length}장 업로드 중...`);
+  pendingFiles.forEach(f => fd.append('files', f));
+  pendingFiles = [];
 
   try {
     const res = await fetch('/api/photos/upload', { method: 'POST', body: fd });
@@ -434,7 +480,6 @@ async function handleUpload(e) {
   }
   hideLoading();
   setUploadDisabled(false);
-  e.target.value = '';
 }
 
 // ── 렌더링 ───────────────────────────────────────────────────
