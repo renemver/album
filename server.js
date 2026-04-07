@@ -35,14 +35,24 @@ app.get('/api/photos', async (req, res) => {
 
     console.log(`[photos] 결과: ${result.resources.length}장`);
 
-    const photos = result.resources.map(r => ({
-      public_id: r.public_id,
-      url:   cloudinary.url(r.public_id, { quality: 'auto', fetch_format: 'auto', width: 1200 }),
-      thumb: cloudinary.url(r.public_id, { quality: 'auto', fetch_format: 'auto', width: 400, height: 400, crop: 'fill' }),
-      created_at: r.created_at,
-      folder: r.folder,
-      taken_at: r.context?.custom?.taken_at || null,
-    }));
+    const photos = result.resources.map(r => {
+      // public_id 예: family-album/2025-07/filename
+      // 폴더 경로에서 YYYY-MM 추출 → 촬영 연월로 사용
+      const folderMatch = r.public_id.match(/\/(\d{4}-\d{2})\//);
+      const yearMonth = folderMatch ? folderMatch[1] : null;
+      // context taken_at 우선, 없으면 폴더 연월 + 01일, 없으면 업로드일
+      const takenAt = r.context?.custom?.taken_at
+        || (yearMonth ? yearMonth + '-01' : null);
+
+      return {
+        public_id: r.public_id,
+        url:   cloudinary.url(r.public_id, { quality: 'auto', fetch_format: 'auto', width: 1200 }),
+        thumb: cloudinary.url(r.public_id, { quality: 'auto', fetch_format: 'auto', width: 400, height: 400, crop: 'fill' }),
+        created_at: r.created_at,
+        folder: r.folder,
+        taken_at: takenAt,
+      };
+    });
 
     res.json({ photos });
   } catch (err) {
